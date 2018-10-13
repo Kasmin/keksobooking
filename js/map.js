@@ -1,8 +1,10 @@
 'use strict';
 
+var pins = {};
+var OFFSET_TO_STICK = 47;
 var arrayEl = [];
 var generateRandom = function (randomCount, minCount) {
-  minCount = typeof minCount !== 'undefined' ? minCount : 0;
+  minCount = typeof minCount !== 'undefined' ? minCount : 0; // Задание значение по умолчанию
   var tRandom = Math.floor((Math.random() * randomCount));
   if (tRandom === randomCount) {
     tRandom--;
@@ -35,6 +37,7 @@ var arrayPhotos = [
 var generateArray = function (array) {
   for (var i = 0; i < 8; i++) {
     array[i] = {
+      id: i,
       author: {
         avatar: 'img/avatars/user0' + generateRandom(8, 1) + '.png'
       },
@@ -61,8 +64,6 @@ var generateArray = function (array) {
 
 generateArray(arrayEl);
 
-document.querySelector('.map').classList.remove('map--faded');
-
 var fragment = document.createDocumentFragment();
 var templatePin = document.querySelector('#pin').content.querySelector('.map__pin');
 var mapPins = document.querySelector('.map__pins');
@@ -73,14 +74,13 @@ var renderPins = function (pin) {
   tempPin.style.top = pin.location.y + 'px';
   tempPin.querySelector('img').src = pin.author.avatar;
   tempPin.querySelector('img').alt = pin.offer.title;
+  tempPin.id = 'pin-id--' + pin.id;
   return tempPin;
 };
 
 for (var index = 0; index < arrayEl.length; index++) {
   fragment.appendChild(renderPins(arrayEl[index]));
 }
-
-mapPins.appendChild(fragment);
 
 var renderType = function (type) {
   if (type === 'flat') {
@@ -124,7 +124,6 @@ var templateCard = document.querySelector('#card').content.querySelector('.map__
 
 var renderCard = function (card) {
   var tempCard = templateCard.cloneNode(true);
-  
   var tempFeature = tempCard.querySelector('.popup__features');
   for (var i = tempFeature.children.length; i > 0; i--) {
     tempFeature.removeChild(tempFeature.children[(i - 1)]);
@@ -145,11 +144,45 @@ var renderCard = function (card) {
   tempCard.querySelector('.popup__description').textContent = card.offer.description;
   tempCard.querySelector('.popup__avatar').src = card.author.avatar;
   tempCard.querySelector('.popup__photos').appendChild(renderPhotos(card.offer.photos));
-  console.dir(tempCard.querySelector('.popup__features').children);
   return tempCard;
 };
 
-var cardSection = document.querySelector('.map');
-cardSection.insertBefore(renderCard(arrayEl[0]), document.querySelector('.map__filters-container'));
+var generateHandlerForPins = function (elPins) {
+  for (var i = 1; i < elPins.length; i++) {
+    elPins[i].addEventListener('click', cardShowHandler);
+  }
+};
 
+var cardShowHandler = function (evt) {
+  var cardSection = document.querySelector('.map');
+  var cardID = evt.target.parentNode.id.slice(-1); // получаем id элемента массивы через родителя img
+  cardSection.insertBefore(renderCard(arrayEl[cardID]), document.querySelector('.map__filters-container'));
+};
+
+var activatePageHandler = function () {
+  document.querySelector('.map').classList.remove('map--faded');
+  document.querySelector('.ad-form').classList.remove('ad-form--disabled');
+  var listFieldsets = document.querySelectorAll('.ad-form fieldset');
+  for (var i = 0; i < listFieldsets.length; i++) {
+    listFieldsets[i].disabled = false;
+  }
+  mapPins.appendChild(fragment);
+  pins = document.querySelectorAll('.map__pin');
+  generateHandlerForPins(pins);
+};
+var getCoordinat = function (offsetY) {
+  offsetY = typeof offsetY !== 'undefined' ? offsetY : 0; // Задание значение по умолчанию
+  var tPin = document.querySelector('.map__pin--main');
+  var x = tPin.offsetLeft + tPin.clientWidth / 2;
+  var y = tPin.offsetTop + tPin.clientHeight / 2 + offsetY;
+  document.querySelector('#address').value = Math.floor(x) + ', ' + Math.floor(y);
+}
+var getCoordinatHandler = function () {
+  getCoordinat(OFFSET_TO_STICK);
+};
+getCoordinat();
+document.querySelector('.map__pin--main').addEventListener('mouseup', activatePageHandler);
+document.querySelector('.map__pin--main').addEventListener('mouseup', getCoordinatHandler);
+
+console.log(pins);
 
